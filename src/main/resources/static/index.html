@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <!--引入vue.js,elementui和axios-->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <!-- 引入组件库 -->
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+<body>
+<div id="app">
+    <table>
+        <tr>
+            <td><el-tag size="mini">数据库用户名:</el-tag></td>
+            <td><el-input size="mini" v-model="db.username"></el-input></td>
+        </tr>
+        <tr>
+            <td><el-tag size="mini">数据库密码:</el-tag></td>
+            <td><el-input size="mini" v-model="db.password"></el-input></td>
+        </tr>
+        <tr>
+            <td><el-tag size="mini">数据库连接地址:</el-tag></td>
+            <td><el-input size="mini" v-model="db.url">
+                <template slot="prepend">jdbc:mysql://</template>
+                <template slot="append">?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai</template>
+            </el-input></td>
+        </tr>
+    </table>
+    <div style="display: flex">
+        <el-button type="primary" size="mini" @click="connect" :disabled="!enableButton">连接数据库</el-button>
+        <div style="color: red;font-weight: bold" >{{msg}}</div>
+        <el-input v-model="packetName" size="mini" style="width:300px"></el-input>
+        <el-button size="mini" type="primary" @click="config">配置</el-button>
+    </div>
+    <el-table
+            :data="tableData"
+            stripe
+            border
+            style="width: 100%">
+        <el-table-column
+                prop="tableName"
+                label="表名称"
+                width="180">
+        </el-table-column>
+        <el-table-column
+                label="实体类名称"
+                width="180">
+            <template slot-scope="scope">
+                <el-input v-model="scope.row.modelName"></el-input>
+            </template>
+        </el-table-column>
+        <el-table-column
+                label="mapper名称">
+            <template slot-scope="scope">
+                <el-input v-model="scope.row.mapperName"></el-input>
+            </template>
+        </el-table-column>
+        <el-table-column
+                label="service名称">
+            <template slot-scope="scope">
+                <el-input v-model="scope.row.serviceName"></el-input>
+            </template>
+        </el-table-column>
+        <el-table-column
+                label="controller名称">
+            <template slot-scope="scope">
+                <el-input v-model="scope.row.controllerName"></el-input>
+            </template>
+        </el-table-column>
+    </el-table>
+    <div>
+        <el-button type="success" size="mini" @click="generateCode">生成代码</el-button>
+        <div style="color: green;font-weight: bold">{{result}}</div>
+        <div>{{codePath}}</div>
+    </div>
+</div>
+<script>
+    new Vue({
+        el:"#app",
+        data() {
+            return{
+                result: '',
+                codePath: '',
+                tableData:[],
+                packetName: 'com.yl',
+                msg : "数据库未连接",
+                enableButton: true,
+                db: {
+                    username: "root",
+                    password: "root",
+                    url : "localhost:3306/demo"
+                }
+            }
+        },
+        methods: {
+            connect() {
+                let _this = this
+                this.db.url = "jdbc:mysql://" + this.db.url + "?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai"
+                axios.post("/connect",this.db).then(res => {
+                    console.log(res.data)
+                    _this.db = {
+                        username: "root",
+                        password: "root",
+                        url : "localhost:3306/demo"
+                    }
+                    _this.msg = res.data.msg
+                    _this.enableButton = false
+                }).catch(err => {
+                    console.log(err)
+                })
+            },
+            config() {
+                let _this = this
+                axios.post("/config",{packetName: _this.packetName}).then(res => {
+                    console.log(res.data)
+                    _this.msg = res.data.msg
+                    _this.tableData = res.data.obj
+                }).catch(err => {
+                    console.log(err)
+                })
+            },
+            generateCode() {
+                let _this = this
+                axios.post("/generateCode",_this.tableData).then(res => {
+                    console.log(res.data)
+                    _this.result = res.data.msg
+                    _this.codePath = res.data.obj
+                }).catch(err => {
+                    console.log(err)
+                })
+            }
+        }
+    })
+</script>
+</body>
+</html>
